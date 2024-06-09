@@ -1,0 +1,31 @@
+# npm install -g artillery
+
+config:
+  target: "ws://localhost:1234"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+    - duration: 30
+      arrivalRate: 10
+    - duration: 60
+      arrivalRate: 20
+scenarios:
+  - engine: "ws"
+    flow:
+      - send: 
+          text: '{"who": "CLIENT", "time": "{{ now }}", "what": "Hello, Server!"}' 
+      - think: 1
+      - send:
+          text: '{"who": "CLIENT", "time": "{{ now }}", "what": "This is a load test."}'
+      - think: 1
+      - send:
+          text: '{"who": "CLIENT", "time": "{{ now }}", "what": "How are you?"}'
+      - think: 2
+      - send:
+          text: '{"who": "CLIENT", "time": "{{ now }}", "what": "Goodbye!"}'
+      - think: 3
+
+
+# Run above load test :  artillery run --output report.json ws_server_load_test.yml 
+# Generate html report:  artillery report --output report.html report.json
+

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Terminal</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #0f0;
+            font-family: monospace;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #terminal {
+            border: 2px solid #00FF00;
+            border-radius: 10px;
+            background-color: #000;
+            padding: 20px;
+            margin: 10px;
+            box-shadow: 0px 0px 20px #00FF00;
+            overflow-y: auto;
+            max-height: 70vh;
+            width: 90vw;
+            overflow-wrap: break-word;
+        }
+
+        #terminal p {
+            margin: 5px;
+            padding: 0;
+        }
+
+        #inputArea {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        #messageInput {
+            flex: 1;
+            background-color: #000;
+            color: #0f0;
+            border: 2px solid #00FF00;
+            border-radius: 5px;
+            outline: none;
+            padding: 5px;
+            font-family: monospace;
+            font-size: 16px;
+            margin-right: 10px;
+            width: 70%;
+        }
+
+        #sendButton {
+            background-color: #00FF00;
+            color: #000;
+            border: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        #sendButton:hover {
+            background-color: #009900;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="terminal"></div>
+    <div id="inputArea">
+        <input type="text" id="messageInput" placeholder="Enter command...">
+        <button id="sendButton" onclick="sendMessage()">Send</button>
+    </div>
+
+    <script  >
+        var ws = new WebSocket("ws://localhost:1234");
+
+        ws.onopen = function(event) {
+            displayMessage("CONNECTED TO SERVER...");
+            // fetchJsonMessages(); // Fetch messages when connection is opened
+            // due to wrong writing of messages in json, above function gives error, and closes socket
+        };
+
+        ws.onmessage = function(event) {
+            var messages = JSON.parse(event.data);
+            console.log(messages);
+            displayMessage(messages.time + " - " + (messages.who === "SERVER" ? "Server: " : "Client: ") + messages.what);
+
+        };
+
+        ws.onerror = function(event) {
+            displayMessage("ERROR OCCURRED: " + event);
+        };
+        ws.onclose = function(event) {
+            displayMessage("CONNECTION CLOSED: " + event);
+        };
+
+        function sendMessage() {
+            var messageInput = document.getElementById("messageInput");
+            var messageContent = messageInput.value;
+            var message = JSON.stringify({ who: "CLIENT", time: new Date().toISOString(), what: messageContent });
+            ws.send(message);
+            messageInput.value = "";
+        }
+
+        function displayMessage(message) {
+            var terminal = document.getElementById("terminal");
+            terminal.innerHTML += "<p>" + message + "</p>";
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Allow sending messages by pressing Enter
+        document.getElementById("messageInput").addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+
+        function fetchJsonMessages() {
+            fetch('data.json')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(item => {
+                        var timestamp = item.time;
+                        var who = item.who;
+                        var content = item.what;
+                        displayMessage(timestamp + " - " + (who === "SERVER" ? "Server: " : "Client: ") + content);
+                    });
+                })
+                .catch(error => console.error('Error fetching messages:', error));
+        }
+    </script>
+
+</body>
+
+</html>
